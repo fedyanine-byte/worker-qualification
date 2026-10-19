@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CapyUber: Autopilot — Minister</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#06090F;--surface:#0D1520;--surface2:#162030;--border:#1E2D40;--yellow:#F5BE00;--green:#10B981;--orange:#F59E0B;--red:#EF4444;--blue:#3B82F6;--text:#E2EAF4;--muted:#4B6280;--dim:#7C94AD;--font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:15px}
+  .wrap{max-width:460px;margin:0 auto;padding:14px 14px 40px}
+  header{display:flex;align-items:center;gap:10px;padding:4px 2px 12px}
+  .logo{font-family:var(--mono);font-size:13px;color:var(--yellow)}.logo span{color:var(--dim)}
+  .q{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:10px;text-transform:uppercase}
+  .role{display:inline-block;background:rgba(245,190,0,.12);color:var(--yellow);border-radius:6px;padding:3px 10px;font-size:12px;font-family:var(--mono);margin-bottom:10px}
+  .budgetrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .bx{background:var(--surface2);border-radius:8px;padding:10px}
+  .bx .l{font-size:10px;color:var(--muted);font-family:var(--mono)}
+  .bx .v{font-size:20px;font-weight:600;font-family:var(--mono);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:10px;font-family:var(--mono);color:var(--muted);padding:5px 6px;border-bottom:1px solid var(--border)}
+  td{padding:5px 6px;border-bottom:1px solid rgba(30,45,64,.5);font-family:var(--mono)}
+  .policy{border:1px solid var(--border);border-radius:9px;padding:11px;margin-bottom:9px}
+  .policy .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .policy .nm{font-weight:600;font-size:14px}
+  .policy .cost{font-size:11px;font-family:var(--mono);color:var(--orange)}
+  .policy .desc{font-size:12px;color:var(--dim);margin:4px 0 8px}
+  .seg{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+  .seg button{font-size:11px;padding:5px 9px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--dim);cursor:pointer}
+  .seg button.on{border-color:var(--yellow);color:var(--yellow)}
+  .btn{padding:9px 13px;border-radius:8px;font-size:13px;font-weight:600;border:none;background:var(--yellow);color:#111;cursor:pointer}
+  .btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .btn:disabled{opacity:.4}
+  .queue .item{border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:8px}
+  .queue .act{display:flex;gap:8px;margin-top:8px}
+  .queue .act button{flex:1;padding:9px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer}
+  .ok{background:rgba(16,185,129,.15);color:var(--green)}
+  .no{background:rgba(239,68,68,.14);color:var(--red)}
+  .pending{color:var(--orange);font-size:11px;font-family:var(--mono)}
+  .hidden{display:none}
+  .waiting{text-align:center;color:var(--dim);padding:16px;font-size:14px}
+  .banner{background:rgba(245,190,0,.1);border:1px solid rgba(245,190,0,.3);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--yellow);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">CapyUber <span>Government</span></div><div class="q" id="qlabel"></div></header>
+  <div id="banner"></div>
+  <div id="role" class="role">—</div>
+
+  <div class="card">
+    <h2>Treasury</h2>
+    <div class="budgetrow">
+      <div class="bx"><div class="l">Budget</div><div class="v" style="color:var(--yellow)" id="budget">—</div></div>
+      <div class="bx"><div class="l">Tax next quarter</div><div class="v" id="tax">—</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:4px">Tax falls as drivers are displaced. The need rises as it falls.</div>
+  </div>
+
+  <div class="card">
+    <h2>The workforce you govern</h2>
+    <table><thead><tr><th>Segment</th><th>Active</th><th>Avg fit</th><th>At risk</th></tr></thead><tbody id="segBody"></tbody></table>
+  </div>
+
+  <div id="proposeCard" class="card">
+    <h2 id="proposeTitle">Propose a policy</h2>
+    <div id="policies"></div>
+  </div>
+
+  <div id="financeCard" class="card hidden">
+    <h2>Approval queue (Finance only)</h2>
+    <div class="queue" id="queue"></div>
+  </div>
+
+  <div id="waitCard" class="card hidden"><div class="waiting" id="waitMsg"></div></div>
+</div>
+
+<script src="params.js"></script>
+<script src="engine.js"></script>
+<script type="module">
+import { db, gref, pref, polcol, pcol, onSnapshot, setDoc, updateDoc, getDocs, addDoc, doc, collection, uid, serverTimestamp } from './shared.js';
+const E = window.Engine, P = window.PARAMS;
+const ID = uid();
+let gstate = null, me = null, segData = null, target = 'all';
+
+const POLICIES = [
+  { type: 'incomeSupport', owner: 'Labour & Welfare', nm: 'Income support while training', cost: 'Pays €6/study-hour', desc: 'Frees people to study without starving. The strongest lever against the time trap.' },
+  { type: 'childcare', owner: 'Labour & Welfare', nm: 'Childcare support', cost: '€900/beneficiary', desc: '+6 study hours/week for workers with family load. Takes 2 quarters to take effect.' },
+  { type: 'jobGuarantee', owner: 'Labour & Welfare', nm: 'Public job guarantee', cost: '€2,700/worker', desc: 'Worker leaves retraining for a public job — counts as employed, not as fit.' },
+  { type: 'bridge', owner: 'Labour & Welfare', nm: 'Early retirement bridge (55+)', cost: '€2,000/worker', desc: 'Dignified exit for the oldest workers.' },
+  { type: 'voucher', owner: 'Education', nm: 'Training vouchers', cost: 'Up to €1,500/worker', desc: 'Covers course fees. Money, not time — watch whether it actually moves anyone.' },
+  { type: 'bootcampSubsidy', owner: 'Education', nm: 'Subsidised bootcamp seats', cost: '€20,000/quarter', desc: 'Halves bootcamp fees for everyone.' },
+  { type: 'banAgeGate', owner: 'Education', nm: 'Ban age gates', cost: '€0', desc: 'Opens CapyUber Academy to over-40s. CapyUber may retaliate by cutting seats.' },
+  { type: 'robotTax', owner: 'Finance', nm: 'Robot tax (10%)', cost: 'Raises ~€30k/quarter', desc: 'Levy on CapyUber robotaxi revenue. Funds everything else — but CapyUber will notice.' },
+];
+
+window.Min = {
+  seg(t) { target = t; renderPolicies(); },
+  async propose(type) {
+    const pol = POLICIES.find(p => p.type === type);
+    await addDoc(polcol(), { type, target, by: me.portfolio, nm: pol.nm, approved: false, proposedQ: gstate.quarter, createdAt: serverTimestamp() });
+  },
+  async decide(pid, ok) {
+    if (ok) await updateDoc(doc(db, 'games', 'class', 'policies', pid), { approved: true, approvedQ: gstate.quarter });
+    else await updateDoc(doc(db, 'games', 'class', 'policies', pid), { rejected: true });
+  },
+};
+
+onSnapshot(gref(), s => { gstate = s.exists() ? s.data() : null; render(); });
+onSnapshot(pref(ID), s => { me = s.exists() ? s.data() : null; if (me && me.role === 'worker') location.href = 'worker.html'; render(); });
+onSnapshot(polcol(), () => renderQueue());
+onSnapshot(pcol(), snap => { computeSegments(snap); render(); });
+
+function computeSegments(snap) {
+  // host writes worker fit/status to player docs; ministers see humans only (bots are on the projector)
+  const ws = []; snap.forEach(d => { const p = d.data(); if (p.role === 'worker' && p.profile) ws.push(p); });
+  const seg = { 'Under 35': [], '35–49': [], '50+': [], 'With family': [] };
+  for (const w of ws) {
+    if (w.profile.age < 35) seg['Under 35'].push(w);
+    else if (w.profile.age < 50) seg['35–49'].push(w);
+    else seg['50+'].push(w);
+    if (w.profile.fam >= 1) seg['With family'].push(w);
+  }
+  segData = seg;
+}
+
+function render() {
+  if (!gstate || !me) return;
+  if (me.role !== 'minister') return;
+  document.getElementById('qlabel').textContent = gstate.phase === 'ended' ? 'Final' : 'Quarter ' + (gstate.quarter || '–') + '/8';
+  document.getElementById('role').textContent = 'Minister of ' + (me.portfolio || '—');
+  document.getElementById('banner').innerHTML = gstate.announcement ? `<div class="banner">📢 ${esc(gstate.announcement)}</div>` : '';
+  document.getElementById('budget').textContent = '€' + Math.round((gstate.budget || 0) / 1000) + 'k';
+  document.getElementById('tax').textContent = gstate.phase === 'ended' ? '—' : '~€' + taxForecast() + 'k';
+  renderSeg();
+  const isFinance = me.portfolio === 'Finance';
+  document.getElementById('financeCard').classList.toggle('hidden', !isFinance);
+  // policy window only during 'policy' phase; propose anytime but effects next quarter
+  const canAct = gstate.phase === 'policy' || gstate.phase === 'quarter';
+  document.getElementById('proposeCard').classList.toggle('hidden', gstate.phase === 'ended' || gstate.phase === 'lobby');
+  document.getElementById('waitCard').classList.toggle('hidden', gstate.phase !== 'lobby' && gstate.phase !== 'ended');
+  if (gstate.phase === 'lobby') document.getElementById('waitMsg').textContent = 'You are a Minister. Waiting for the host to start the game.';
+  if (gstate.phase === 'ended') document.getElementById('waitMsg').textContent = 'Game over. See the projector for the government scorecard.';
+  renderPolicies();
+  renderQueue();
+}
+
+function renderSeg() {
+  if (!segData) return;
+  const qIdx = Math.max(0, (gstate.quarter || 1) - 1);
+  document.getElementById('segBody').innerHTML = Object.entries(segData).map(([nm, arr]) => {
+    const active = arr.filter(w => w.status !== 'exited');
+    const avg = active.length ? Math.round(active.reduce((s, w) => s + (w.fit || 0), 0) / active.length * 100) : 0;
+    const risk = arr.filter(w => (w.savings || 0) < 2000 && w.status === 'active').length;
+    return `<tr><td style="font-family:var(--font)">${nm}</td><td>${active.length}</td><td style="color:${avg >= 60 ? 'var(--green)' : avg >= 35 ? 'var(--orange)' : 'var(--red)'}">${avg}%</td><td style="color:var(--red)">${risk}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" style="color:var(--dim)">No workers yet.</td></tr>';
+}
+
+function renderPolicies() {
+  if (!me || me.role !== 'minister' || gstate.phase === 'lobby' || gstate.phase === 'ended') { document.getElementById('policies').innerHTML = ''; return; }
+  const mine = POLICIES.filter(p => p.owner === me.portfolio);
+  const segs = ['all', 'Under 35', '35–49', '50+', 'With family'];
+  const segBtns = `<div class="seg">${segs.map(s => `<button class="${target === s ? 'on' : ''}" onclick="Min.seg('${s}')">${s === 'all' ? 'Everyone' : s}</button>`).join('')}</div>`;
+  document.getElementById('policies').innerHTML = (me.portfolio === 'Finance' ? '' : '<p style="font-size:12px;color:var(--dim);margin-bottom:8px">Target a segment, then propose. Finance must approve.</p>') + segBtns +
+    mine.map(p => `<div class="policy"><div class="top"><span class="nm">${p.nm}</span><span class="cost">${p.cost}</span></div>
+      <div class="desc">${p.desc}</div>
+      <button class="btn" onclick="Min.propose('${p.type}')">${me.portfolio === 'Finance' ? 'Enact' : 'Propose'} →</button></div>`).join('');
+  document.getElementById('proposeTitle').textContent = me.portfolio === 'Finance' ? 'Your levers (enact directly)' : 'Propose a policy';
+}
+
+async function renderQueue() {
+  if (!me || me.portfolio !== 'Finance' || !gstate) return;
+  const snap = await getDocs(polcol());
+  const items = []; snap.forEach(d => { const p = d.data(); if (!p.approved && !p.rejected && p.by !== 'Finance') items.push({ id: d.id, ...p }); });
+  document.getElementById('queue').innerHTML = items.length ? items.map(p => `
+    <div class="item"><div style="font-weight:600">${p.nm}</div>
+    <div style="font-size:12px;color:var(--dim)">from ${p.by} · target: ${p.target === 'all' ? 'everyone' : p.target}</div>
+    <div class="act"><button class="ok" onclick="Min.decide('${p.id}',true)">Approve</button><button class="no" onclick="Min.decide('${p.id}',false)">Reject</button></div></div>`).join('')
+    : '<div class="waiting">No proposals waiting.</div>';
+}
+
+function taxForecast() {
+  const qIdx = Math.max(0, (gstate.quarter || 1) - 1);
+  const rate = P.drivingRate[Math.min(qIdx + 1, 7)] * P.rateMult;
+  return Math.round(110 * 40 * P.weeksPerQuarter * rate * 0.20 / 1000);
+}
+function esc(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+</script>
+</body>
+</html>

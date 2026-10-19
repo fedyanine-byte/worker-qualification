@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CapyUber: Autopilot — Driver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#06090F;--surface:#0D1520;--surface2:#162030;--border:#1E2D40;--yellow:#F5BE00;--green:#10B981;--orange:#F59E0B;--red:#EF4444;--blue:#3B82F6;--text:#E2EAF4;--muted:#4B6280;--dim:#7C94AD;--font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:15px}
+  .wrap{max-width:460px;margin:0 auto;padding:14px 14px 90px}
+  header{display:flex;align-items:center;gap:10px;padding:4px 2px 12px}
+  .logo{font-family:var(--mono);font-size:13px;color:var(--yellow)}
+  .logo span{color:var(--dim)}
+  .q{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;font-family:var(--mono);color:var(--muted);letter-spacing:.06em;margin-bottom:10px;text-transform:uppercase}
+  .joinform input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:16px;padding:12px;margin-bottom:10px}
+  .btn{width:100%;padding:13px;border-radius:9px;font-size:15px;font-weight:600;border:none;background:var(--yellow);color:#111;cursor:pointer}
+  .btn:disabled{opacity:.4}
+  .btn.sec{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .prof{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pf{background:var(--surface2);border-radius:8px;padding:8px 10px}
+  .pf .l{font-size:10px;color:var(--muted);font-family:var(--mono)}
+  .pf .v{font-size:14px;font-weight:600;margin-top:2px}
+  .money{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .money .big{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--green)}
+  .skillrow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+  .skillrow .nm{width:92px;color:var(--dim)}
+  .track{flex:1;height:7px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden}
+  .track>i{display:block;height:100%;background:var(--blue);border-radius:4px}
+  .reqmark{position:absolute;top:-2px;width:2px;height:11px;background:var(--yellow)}
+  .course{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;cursor:pointer}
+  .course.sel{border-color:var(--yellow);background:rgba(245,190,0,.06)}
+  .course.locked{opacity:.5;cursor:not-allowed}
+  .course .box{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .course.sel .box{background:var(--yellow);border-color:var(--yellow);color:#111}
+  .course .nm{font-weight:600;font-size:14px}
+  .course .meta{font-size:11px;color:var(--dim);margin-top:2px;font-family:var(--mono)}
+  .course .lock{font-size:11px;color:var(--orange);margin-top:2px}
+  .load{height:9px;background:var(--surface2);border-radius:5px;overflow:hidden;margin:8px 0 4px}
+  .load>i{display:block;height:100%;background:var(--green);transition:width .2s,background .2s}
+  .loadlbl{font-size:11px;font-family:var(--mono);color:var(--dim);display:flex;justify-content:space-between}
+  .bottom{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 14px}
+  .bottom .inner{max-width:460px;margin:0 auto}
+  .banner{background:rgba(245,190,0,.1);border:1px solid rgba(245,190,0,.3);border-radius:8px;padding:9px 11px;font-size:13px;color:var(--yellow);margin-bottom:12px}
+  .event{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 11px;font-size:13px;color:#fca5a5;margin-bottom:12px}
+  .waiting{text-align:center;color:var(--dim);padding:20px;font-size:14px}
+  .result{text-align:center;padding:14px}
+  .result .big{font-size:30px;font-weight:700;margin:6px 0}
+  .vote{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  .vote button{flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;cursor:pointer}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">CapyUber <span>Driver</span></div><div class="q" id="qlabel"></div></header>
+
+  <div id="joinCard" class="card joinform">
+    <h2>Join the game</h2>
+    <input id="nameIn" placeholder="Your name" maxlength="20" autocomplete="off">
+    <button class="btn" onclick="App.join()">Join as Driver</button>
+    <div id="joinMsg" class="waiting"></div>
+  </div>
+
+  <div id="game" class="hidden">
+    <div id="banner"></div>
+    <div id="event"></div>
+
+    <div class="card">
+      <h2>You</h2>
+      <div class="prof" id="prof"></div>
+    </div>
+
+    <div class="card">
+      <div class="money"><span class="dim" style="color:var(--dim);font-size:13px">Savings</span><span class="big" id="savings">—</span></div>
+      <h2 style="margin-top:8px">Skills vs requirement (▮ = needed)</h2>
+      <div id="skills"></div>
+    </div>
+
+    <div id="courseCard" class="card">
+      <h2>Choose your quarter</h2>
+      <p style="font-size:12px;color:var(--dim);margin-bottom:10px">Every hour you study is an hour you can't drive. Hours you don't study, you drive.</p>
+      <div id="courses"></div>
+      <div class="loadlbl"><span>Study load</span><span id="loadTxt">0%</span></div>
+      <div class="load"><i id="loadBar" style="width:0%"></i></div>
+      <div id="loadWarn" style="font-size:11px;color:var(--orange)"></div>
+    </div>
+
+    <div id="waitCard" class="card hidden"><div class="waiting" id="waitMsg">Submitted. Waiting for the quarter to resolve…</div></div>
+
+    <div id="voteCard" class="card hidden">
+      <h2>Rate the government</h2>
+      <div class="vote">
+        <button onclick="App.vote(1)">1</button><button onclick="App.vote(2)">2</button><button onclick="App.vote(3)">3</button><button onclick="App.vote(4)">4</button><button onclick="App.vote(5)">5</button>
+      </div>
+    </div>
+
+    <div id="resultCard" class="card hidden"><div class="result" id="resultBody"></div></div>
+  </div>
+</div>
+
+<div class="bottom hidden" id="submitBar"><div class="inner">
+  <button class="btn" id="submitBtn" onclick="App.submit()">Lock in this quarter</button>
+</div></div>
+
+<script src="params.js"></script>
+<script src="engine.js"></script>
+<script type="module">
+import { db, gref, pref, pcol, onSnapshot, setDoc, updateDoc, getDoc, doc, uid, serverTimestamp, addDoc, evcol } from './shared.js';
+const E = window.Engine, P = window.PARAMS;
+const ID = uid();
+let gstate = null, me = null, selected = new Set();
+const FAM = ['No children', '1 child', '2+ children', 'Caring for parent'];
+const ENG = ['', 'A2', 'B1', 'B2'], DIG = ['Low', 'Medium', 'High'], EDU = ['Secondary', 'Vocational', 'Bachelor'];
+const SKNAME = { english: 'English', digital: 'Digital basics', data: 'Data analysis', fleet: 'Fleet software', teleop: 'Remote supervision', safety: 'Safety', reg: 'Regulation', agents: 'AI agents', cyber: 'Cybersecurity' };
+
+window.App = {
+  async join() {
+    const name = document.getElementById('nameIn').value.trim() || 'Driver';
+    await setDoc(pref(ID), { name, joinedAt: serverTimestamp() }, { merge: true });
+    document.getElementById('joinMsg').textContent = 'Joined! Waiting for the host to start…';
+    document.getElementById('nameIn').disabled = true;
+  },
+  toggle(id) {
+    const c = E.courseById(id); if (!c) return;
+    if (selected.has(id)) selected.delete(id); else selected.add(id);
+    renderCourses();
+  },
+  async submit() {
+    await updateDoc(pref(ID), { pendingChoices: [...selected], submitted: true });
+    document.getElementById('submitBar').classList.add('hidden');
+    document.getElementById('courseCard').classList.add('hidden');
+    document.getElementById('waitCard').classList.remove('hidden');
+  },
+  async vote(n) { await updateDoc(pref(ID), { vote: n }); document.getElementById('voteCard').classList.add('hidden'); },
+};
+
+onSnapshot(gref(), s => { gstate = s.exists() ? s.data() : null; render(); });
+onSnapshot(pref(ID), s => { me = s.exists() ? s.data() : null; render(); if (me && me.role) { document.getElementById('joinCard').classList.add('hidden'); document.getElementById('game').classList.remove('hidden'); } });
+
+let lastQ = null;
+function render() {
+  if (!gstate || !me) return;
+  if (me.role === 'minister') { location.href = 'minister.html'; return; }
+  document.getElementById('qlabel').textContent = gstate.phase === 'ended' ? 'Final' : 'Quarter ' + (gstate.quarter || '–') + '/8';
+  // banner / event
+  document.getElementById('banner').innerHTML = gstate.announcement ? `<div class="banner">📢 ${esc(gstate.announcement)}</div>` : '';
+  document.getElementById('event').innerHTML = me.lastEvent ? `<div class="event">⚠️ ${eventText(me.lastEvent)}</div>` : '';
+  // profile
+  if (me.profile) {
+    const p = me.profile;
+    document.getElementById('prof').innerHTML = `
+      ${pf('Age', p.age)} ${pf('Family', FAM[p.fam])}
+      ${pf('English', ENG[p.english])} ${pf('Digital', DIG[p.digital])}
+      ${pf('Education', EDU[p.education])} ${pf('Free hours/wk', famHours(p))}`;
+  }
+  document.getElementById('savings').textContent = me.savings != null ? '€' + me.savings : '—';
+  renderSkills();
+
+  const q = gstate.quarter || 1, qIdx = q - 1;
+  if (gstate.phase === 'ended') return renderResult();
+  // vote
+  if (gstate.voteOpen && me.vote == null) document.getElementById('voteCard').classList.remove('hidden');
+  else document.getElementById('voteCard').classList.add('hidden');
+
+  if (gstate.phase === 'quarter' && me.status !== 'exited') {
+    if (lastQ !== q) { selected = new Set(); lastQ = q; }
+    const submitted = me.submitted;
+    document.getElementById('courseCard').classList.toggle('hidden', submitted);
+    document.getElementById('waitCard').classList.toggle('hidden', !submitted);
+    document.getElementById('submitBar').classList.toggle('hidden', submitted);
+    if (!submitted) renderCourses();
+  } else if (me.status === 'exited') {
+    document.getElementById('courseCard').classList.add('hidden');
+    document.getElementById('submitBar').classList.add('hidden');
+    document.getElementById('waitCard').classList.remove('hidden');
+    document.getElementById('waitMsg').textContent = 'Your savings ran out. You took a warehouse job and left the retraining track.';
+  } else {
+    document.getElementById('courseCard').classList.add('hidden');
+    document.getElementById('submitBar').classList.add('hidden');
+    document.getElementById('waitCard').classList.remove('hidden');
+    document.getElementById('waitMsg').textContent = 'Quarter resolving… the host is stepping the market.';
+  }
+}
+
+function worker() { return { profile: me.profile, skills: me.skills || {}, savings: me.savings || 0, done: doneMap(), enroll: [], status: me.status || 'active' }; }
+function doneMap() { const d = {}; return d; }
+
+function renderSkills() {
+  if (!me.skills) { document.getElementById('skills').innerHTML = ''; return; }
+  const qIdx = Math.max(0, (gstate.quarter || 1) - 1);
+  const req = reqAt(qIdx);
+  document.getElementById('skills').innerHTML = E.SKILLS.map(k => {
+    const lvl = me.skills[k] || 0, r = req[k];
+    const pctHave = lvl / 4 * 100, pctReq = r / 4 * 100;
+    const ok = lvl >= r;
+    return `<div class="skillrow"><span class="nm">${SKNAME[k]}</span>
+      <span class="track"><i style="width:${pctHave}%;background:${ok ? 'var(--green)' : 'var(--blue)'}"></i>
+      ${r > 0 ? `<span class="reqmark" style="left:${pctReq}%"></span>` : ''}</span>
+      <span style="width:26px;text-align:right;font-family:var(--mono);font-size:12px;color:${ok ? 'var(--green)' : 'var(--dim)'}">${lvl}/${r}</span></div>`;
+  }).join('');
+}
+
+function renderCourses() {
+  const q = gstate.quarter || 1, qIdx = q - 1;
+  const w = worker();
+  const list = E.COURSES.map(c => {
+    let locked = false, reason = '';
+    if ((c.available || 0) > qIdx) { locked = true; reason = 'Not offered yet'; }
+    else if (c.academy && gstate.policies && gstate.policies.banAgeGate) { if (w.profile.education < 1) { locked = true; reason = 'Needs vocational+'; } }
+    else if (!c.req(w.skills, w.profile)) { locked = true; reason = reqText(c, w); }
+    return { c, locked, reason };
+  });
+  // load from selected
+  const cap = E.capacity(w.profile);
+  let hrs = 0; selected.forEach(id => { const c = E.courseById(id); if (c) hrs += E.chrs(c); });
+  const load = hrs / cap;
+  document.getElementById('courses').innerHTML = list.map(({ c, locked, reason }) => {
+    const sel = selected.has(c.id);
+    const feeTxt = c.fee ? '€' + c.fee : 'free';
+    const gain = Object.entries(c.gain).map(([k, v]) => `${SKNAME[k]} +${v}`).join(', ');
+    return `<div class="course ${sel ? 'sel' : ''} ${locked ? 'locked' : ''}" ${locked ? '' : `onclick="App.toggle('${c.id}')"`}>
+      <div class="box">${sel ? '✓' : ''}</div>
+      <div style="flex:1"><div class="nm">${c.name}</div>
+      <div class="meta">${gain} · ${E.chrs(c)}h/wk × ${c.quarters}q · ${feeTxt}</div>
+      ${locked ? `<div class="lock">🔒 ${reason}</div>` : ''}</div></div>`;
+  }).join('');
+  const bar = document.getElementById('loadBar'), txt = document.getElementById('loadTxt'), warn = document.getElementById('loadWarn');
+  bar.style.width = Math.min(100, load * 100) + '%';
+  bar.style.background = load > 1.3 ? 'var(--red)' : load > 1 ? 'var(--orange)' : 'var(--green)';
+  txt.textContent = Math.round(load * 100) + '% of your capacity';
+  warn.textContent = load > 1.3 ? 'Burnout risk — one course may fail.' : load > 1 ? 'Overloaded — higher dropout risk.' : '';
+}
+
+function reqAt(qIdx) { const r = {}; E.SKILLS.forEach(k => r[k] = P.requirements[k][qIdx] + ((gstate.reqBump || {})[k] || 0)); return r; }
+function reqText(c, w) {
+  const need = [];
+  if (c.req.toString().includes('english >= 2') && w.skills.english < 2) need.push('English B1');
+  if (c.req.toString().includes('digital >= 2') && w.skills.digital < 2) need.push('Digital medium');
+  if (c.req.toString().includes('data >= 1') && w.skills.data < 1) need.push('Data 1');
+  if (c.req.toString().includes('fleet >= 1') && w.skills.fleet < 1) need.push('Fleet 1');
+  if (c.req.toString().includes('safety >= 1') && w.skills.safety < 1) need.push('Safety 1');
+  if (c.req.toString().includes('age <= 40') && w.profile.age > 40) need.push('Age ≤ 40');
+  if (c.req.toString().includes('education >= 2') && w.profile.education < 2) need.push('Bachelor');
+  return need.length ? 'Requires ' + need.join(', ') : 'Locked';
+}
+function famHours(p) { return [50, 42, 35, 30][p.fam]; }
+function eventText(id) { return ({ sick: 'A child was sick — fewer hours this quarter.', repair: 'Car repair cost you €800.', rent: 'Your rent went up €200/quarter.', deact: 'Platform suspended you a week — income down 25%.', family: 'Family emergency — €500 and some lost hours.' })[id] || id; }
+function renderResult() {
+  document.getElementById('courseCard').classList.add('hidden');
+  document.getElementById('submitBar').classList.add('hidden');
+  document.getElementById('waitCard').classList.add('hidden');
+  document.getElementById('voteCard').classList.add('hidden');
+  const r = document.getElementById('resultCard'); r.classList.remove('hidden');
+  const f = Math.round((me.fit || 0) * 100), tf = Math.round((me.twinFit || 0) * 100);
+  const st = me.status;
+  const map = { hired: ['#10B981', '🎉 Hired', 'You cleared the bar at CapyUber.'], interviewed: ['#F59E0B', 'Interviewed, not hired', 'You reached 80% but not the cutoff.'], stillTraining: ['#F59E0B', 'Still retraining', 'The gap was too wide to close in time.'], exited: ['#EF4444', 'Left the track', 'Savings ran out — you took a warehouse job.'], publicJob: ['#3B82F6', 'Public job', 'The state employed you directly.'], bridged: ['#3B82F6', 'Bridged to retirement', 'You exited early with support.'] };
+  const m = map[st] || ['#7C94AD', st, ''];
+  document.getElementById('resultBody').innerHTML = `
+    <div style="color:${m[0]};font-weight:600">${m[1]}</div>
+    <div class="big" style="color:${m[0]}">${f}% fit</div>
+    <div style="color:var(--dim);font-size:13px">${m[2]}</div>
+    <div style="margin-top:12px;font-size:13px;color:var(--dim)">Without any government help, your twin reached <strong style="color:var(--text)">${tf}%</strong>.<br>Policy moved you ${f - tf >= 0 ? '+' : ''}${f - tf} points.</div>`;
+}
+function pf(l, v) { return `<div class="pf"><div class="l">${l}</div><div class="v">${v}</div></div>`; }
+function esc(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+</script>
+</body>
+</html>

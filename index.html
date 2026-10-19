@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CapyUber: Autopilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#06090F;--surface:#0D1520;--surface2:#162030;--border:#1E2D40;--yellow:#F5BE00;--green:#10B981;--text:#E2EAF4;--muted:#4B6280;--dim:#7C94AD;--font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 18px;text-align:center}
+  .logo{font-family:var(--mono);font-size:15px;color:var(--yellow);letter-spacing:.05em;margin-bottom:6px}
+  .logo span{color:var(--dim)}
+  h1{font-size:26px;font-weight:700;margin-bottom:8px;max-width:360px;line-height:1.25}
+  .sub{color:var(--dim);font-size:14px;max-width:340px;line-height:1.6;margin-bottom:28px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;width:100%;max-width:360px}
+  input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--font);font-size:16px;padding:13px;margin-bottom:12px}
+  .btn{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:600;border:none;background:var(--yellow);color:#111;cursor:pointer}
+  .btn:disabled{opacity:.4}
+  .msg{color:var(--dim);font-size:14px;margin-top:16px;line-height:1.5}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .foot{margin-top:28px;font-size:11px;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="logo">CapyUber <span>Autopilot</span></div>
+  <h1 id="title">The robots are driving now.</h1>
+  <p class="sub" id="sub">CapyUber is retraining its drivers to manage the autonomous fleet. Can you make the cut before the job moves again?</p>
+
+  <div class="card" id="card">
+    <input id="nameIn" placeholder="Your name" maxlength="20" autocomplete="off">
+    <button class="btn" id="joinBtn" onclick="go()">Enter the game</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="foot">RSU · Digital Economy · Lecture 7<br>The platform assigns your role.</div>
+
+<script type="module">
+import { gref, pref, onSnapshot, setDoc, uid, serverTimestamp } from './shared.js';
+const ID = uid();
+let joined = false;
+
+onSnapshot(pref(ID), s => {
+  const me = s.exists() ? s.data() : null;
+  if (me && me.role === 'worker') location.href = 'worker.html';
+  else if (me && me.role === 'minister') location.href = 'minister.html';
+  else if (joined) document.getElementById('msg').innerHTML = '<span class="spin"></span>Joined. Waiting for the host to assign your role…';
+});
+
+window.go = async function () {
+  const name = document.getElementById('nameIn').value.trim() || 'Player';
+  document.getElementById('joinBtn').disabled = true;
+  document.getElementById('nameIn').disabled = true;
+  await setDoc(pref(ID), { name, joinedAt: serverTimestamp() }, { merge: true });
+  joined = true;
+  document.getElementById('msg').innerHTML = '<span class="spin"></span>Joined. Waiting for the host to assign your role…';
+};
+</script>
+</body>
+</html>

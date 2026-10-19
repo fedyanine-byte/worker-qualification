@@ -28,6 +28,7 @@ const PARAMS = {
   savingsLo: 1500,
   savingsHi: 15000,    // wide range; mean ~8k
   savingsPerYear: 0,   // no age-savings link, to keep the age gradient stark
+  reqBump: {},         // host's live "raise a requirement" lever; honoured by requiredAt
   // Raise savingsHi toward 20000 to lift the no-policy win rate toward 30%,
   // at the cost of flattening the age/family gradient. See calibration note.
 
@@ -105,3 +106,4 @@ const LIFE_EVENTS = [
 ];
 
 if (typeof module !== 'undefined') module.exports = { PARAMS, FAMILY, COURSES, SKILLS, LIFE_EVENTS };
+if (typeof window !== 'undefined') Object.assign(window, { PARAMS, FAMILY, COURSES, SKILLS, LIFE_EVENTS });

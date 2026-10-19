@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapyUber: Autopilot — Host</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#06090F;--surface:#0D1520;--surface2:#162030;--border:#1E2D40;
+    --yellow:#F5BE00;--yellow-lt:#FFD040;--green:#10B981;--orange:#F59E0B;--red:#EF4444;--blue:#3B82F6;
+    --text:#E2EAF4;--muted:#4B6280;--dim:#7C94AD;
+    --font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:16px;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+  .logo{font-family:var(--mono);font-size:14px;letter-spacing:.06em;color:var(--yellow)}
+  .logo span{color:var(--dim)}
+  .spacer{flex:1}
+  .badge{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 12px;color:var(--dim)}
+  .badge strong{color:var(--text)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .controls{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;background:var(--surface)}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn-primary{background:var(--yellow);color:#111;border-color:var(--yellow)}
+  .btn-primary:hover:not(:disabled){background:var(--yellow-lt)}
+  .btn-ghost{background:var(--surface2);color:var(--text);border-color:var(--border)}
+  .btn-ghost:hover:not(:disabled){border-color:var(--dim)}
+  .btn-danger{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.25)}
+  .timer{font-family:var(--mono);font-size:22px;font-weight:600;min-width:72px;text-align:center}
+  .timer.warn{color:var(--orange)} .timer.danger{color:var(--red)}
+  .tabs{display:flex;gap:2px;padding:8px 20px 0;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+  .tab{padding:8px 14px;font-size:13px;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent}
+  .tab.active{color:var(--text);border-bottom-color:var(--yellow)}
+  .view{flex:1;overflow:auto;padding:18px 20px;display:none}
+  .view.active{display:block}
+  /* stat row */
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px}
+  .stat{background:var(--surface);padding:12px 16px}
+  .stat .l{font-size:11px;font-family:var(--mono);color:var(--muted);margin-bottom:4px}
+  .stat .v{font-family:var(--mono);font-size:22px;font-weight:600}
+  .green{color:var(--green)}.yellow{color:var(--yellow-lt)}.red{color:var(--red)}.orange{color:var(--orange)}.blue{color:var(--blue)}
+  table{width:100%;border-collapse:collapse}
+  th{position:sticky;top:0;background:var(--surface);padding:8px 12px;text-align:left;font-size:11px;font-family:var(--mono);color:var(--muted);border-bottom:1px solid var(--border)}
+  td{padding:7px 12px;font-size:13px;border-bottom:1px solid rgba(30,45,64,.5)}
+  td.num{font-family:var(--mono)}
+  tr.dead{opacity:.4}
+  .pill{font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:4px}
+  .pill.hired{background:rgba(16,185,129,.14);color:var(--green)}
+  .pill.active{background:rgba(59,130,246,.14);color:var(--blue)}
+  .pill.exited{background:rgba(239,68,68,.12);color:var(--red)}
+  .pill.other{background:var(--surface2);color:var(--dim)}
+  .bar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;width:70px;display:inline-block;vertical-align:middle}
+  .bar>i{display:block;height:100%}
+  /* bot grid */
+  .botwrap{margin-top:14px}
+  .botgrid{display:grid;grid-template-columns:repeat(25,1fr);gap:3px;max-width:680px}
+  .bot{aspect-ratio:1;border-radius:2px;background:var(--surface2)}
+  .join{display:flex;gap:30px;align-items:center;flex-wrap:wrap}
+  .joincode{font-family:var(--mono);font-size:42px;font-weight:700;color:var(--yellow);letter-spacing:.04em}
+  .muted{color:var(--dim);font-size:13px}
+  #qr{background:#fff;padding:10px;border-radius:10px}
+  .legend{display:flex;gap:16px;font-size:11px;color:var(--dim);margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .section-title{font-size:12px;font-family:var(--mono);color:var(--muted);margin:18px 0 8px;letter-spacing:.06em}
+  canvas{max-width:100%}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;opacity:0;transform:translateY(8px);transition:.2s;z-index:50}
+  #toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CapyUber <span>Autopilot · Host</span></div>
+  <div class="spacer"></div>
+  <div class="badge">Quarter <strong id="hq">—</strong>/8</div>
+  <div class="badge" id="phaseBadge">Lobby</div>
+  <div class="dot" id="dot"></div>
+</header>
+
+<div class="controls">
+  <div class="timer" id="timer">—</div>
+  <button class="btn btn-primary" id="btnMain" onclick="HOST.mainAction()">Start Game</button>
+  <button class="btn btn-ghost" id="btnAnnounce" onclick="HOST.announce()">📢 Announce</button>
+  <div class="spacer"></div>
+  <span class="muted">CapyUber levers:</span>
+  <button class="btn btn-ghost" onclick="HOST.raiseReq()">↑ Raise a requirement</button>
+  <button class="btn btn-ghost" onclick="HOST.offerDeal()" id="btnDeal">🤝 Offer the deal</button>
+  <button class="btn btn-danger" onclick="HOST.reset()">↺ New Game</button>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-v="live" onclick="HOST.tab('live')">Live</div>
+  <div class="tab" data-v="target" onclick="HOST.tab('target')">Moving target</div>
+  <div class="tab" data-v="gov" onclick="HOST.tab('gov')">Government</div>
+  <div class="tab" data-v="results" onclick="HOST.tab('results')">Results</div>
+  <div class="tab" data-v="model" onclick="HOST.tab('model')">How the model works</div>
+</div>
+
+<!-- LIVE -->
+<div class="view active" id="v-live">
+  <div id="lobbyBox" class="join">
+    <div>
+      <div class="muted">Students open on their phones:</div>
+      <div class="joincode" id="joinUrl">…</div>
+      <div class="muted" style="margin-top:6px">First <strong id="nMin">3</strong> who join become Ministers, the rest Workers.</div>
+    </div>
+    <div id="qr"></div>
+  </div>
+  <div class="stats" id="liveStats" style="display:none">
+    <div class="stat"><div class="l">Workers</div><div class="v blue" id="sWorkers">0</div></div>
+    <div class="stat"><div class="l">Hired so far</div><div class="v green" id="sHired">0</div></div>
+    <div class="stat"><div class="l">Exited</div><div class="v red" id="sExited">0</div></div>
+    <div class="stat"><div class="l">Median fit</div><div class="v yellow" id="sFit">—</div></div>
+    <div class="stat"><div class="l">Gov budget</div><div class="v" id="sBudget">—</div></div>
+    <div class="stat"><div class="l">Tax next Q</div><div class="v" id="sTax">—</div></div>
+  </div>
+  <div id="humanTableWrap" style="display:none">
+    <div class="section-title">HUMAN PLAYERS</div>
+    <table><thead><tr><th>Name</th><th>Age</th><th>Family</th><th>Fit</th><th>Savings</th><th>Status</th><th>vs twin</th></tr></thead>
+    <tbody id="humanBody"></tbody></table>
+    <div class="botwrap">
+      <div class="section-title">THE OTHER 100 (simulated workforce)</div>
+      <div class="botgrid" id="botGrid"></div>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--surface2)"></i>low fit</span>
+        <span><i class="swatch" style="background:var(--orange)"></i>mid</span>
+        <span><i class="swatch" style="background:var(--green)"></i>near bar</span>
+        <span><i class="swatch" style="background:var(--yellow)"></i>hired</span>
+        <span><i class="swatch" style="background:var(--red)"></i>exited</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOVING TARGET -->
+<div class="view" id="v-target">
+  <div class="section-title">REQUIREMENT TOTAL vs WORKFORCE FIT, BY QUARTER</div>
+  <canvas id="targetChart" width="900" height="420"></canvas>
+  <div class="muted" style="margin-top:8px">Red line = points required to be hireable. Band = where the workforce actually sits. The gap is the lesson.</div>
+</div>
+
+<!-- GOVERNMENT -->
+<div class="view" id="v-gov">
+  <div class="stats" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat"><div class="l">Budget</div><div class="v yellow" id="gBudget">—</div></div>
+    <div class="stat"><div class="l">Spent this game</div><div class="v" id="gSpent">—</div></div>
+    <div class="stat"><div class="l">Active policies</div><div class="v" id="gActive">0</div></div>
+    <div class="stat"><div class="l">Approval</div><div class="v" id="gApproval">—</div></div>
+  </div>
+  <div class="section-title">ACTIVE POLICIES</div>
+  <div id="govPolicies" class="muted">None yet.</div>
+</div>
+
+<!-- RESULTS -->
+<div class="view" id="v-results">
+  <div class="stats" style="grid-template-columns:repeat(5,1fr)">
+    <div class="stat"><div class="l">Hired</div><div class="v green" id="rHired">—</div></div>
+    <div class="stat"><div class="l">Still retraining</div><div class="v orange" id="rTrain">—</div></div>
+    <div class="stat"><div class="l">Exited</div><div class="v red" id="rExit">—</div></div>
+    <div class="stat"><div class="l">Public job / bridged</div><div class="v" id="rPub">—</div></div>
+    <div class="stat"><div class="l">Policy lift vs twins</div><div class="v yellow" id="rLift">—</div></div>
+  </div>
+  <div class="section-title">WHO GOT HIRED — STARTING PROFILE vs FINAL FIT</div>
+  <canvas id="scatter" width="900" height="420"></canvas>
+  <div class="muted" style="margin-top:8px">Each dot is a worker. Horizontal = age. Colour = hired (yellow) or not. If the yellow clusters on the left, outcome tracked starting age, not effort.</div>
+</div>
+
+<!-- MODEL -->
+<div class="view" id="v-model">
+  <div class="section-title">EVERY ASSUMPTION IN THE MODEL — ASK WHICH ONES YOU'D CHANGE</div>
+  <div id="modelBody" style="font-size:13px;line-height:1.7;color:var(--dim)"></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="params.js"></script>
+<script src="engine.js"></script>
+<script type="module" src="host.js"></script>
+</body>
+</html>

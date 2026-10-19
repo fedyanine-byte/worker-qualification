@@ -49,7 +49,8 @@ function capacity(profile) {
 
 function requiredAt(q) {
   const r = {};
-  SKILLS.forEach(k => r[k] = PARAMS.requirements[k][q]);
+  const bump = PARAMS.reqBump || {};
+  SKILLS.forEach(k => r[k] = PARAMS.requirements[k][q] + (bump[k] || 0));
   return r;
 }
 
@@ -101,6 +102,8 @@ function courseScore(c, w) {
 
 function chooseCourses(w, q, ctx) {
   if (w.status !== 'active') return [];
+  // Humans (and their twins) submit their own choices; the heuristic is for bots.
+  if (w.human) return (w.pendingChoices || []).slice();
   const st = STRAT[w.strategy];
   const cap = capacity(w.profile);
   const inProgress = new Set(w.enroll.map(e => e.id));
@@ -155,12 +158,16 @@ function resolveQuarter(w, q, ctx, rng) {
 
   // enroll new courses
   const newIds = chooseCourses(w, q, ctx);
+  const inProg = new Set(w.enroll.map(e => e.id));
   for (const id of newIds) {
     const c = courseById(id);
+    if (!c || inProg.has(id) || (w.done[id] && !c.restore)) continue;
     let fee = effectiveFee(c, w, q, ctx);
+    if (fee > w.savings) continue; // can't afford: a real person skips it (twin may skip what the human bought)
     if (ctx.policies.voucher) ctx.voucherUsedThisQ[w.id] = (ctx.voucherUsedThisQ[w.id] || 0) + Math.min(c.fee, 1500);
     w.savings -= fee;
     w.enroll.push({ id, remaining: c.quarters, feePaid: fee });
+    inProg.add(id);
   }
 
   // hours & load
@@ -179,10 +186,12 @@ function resolveQuarter(w, q, ctx, rng) {
     income += Math.min(study, PARAMS.incomeSupportCapHrs) * PARAMS.incomeSupportPerHour * PARAMS.weeksPerQuarter;
   }
 
-  // life event
+  // life event — per-worker deterministic stream so a twin sees identical events
   let event = null;
-  if (rng() < PARAMS.eventChance) {
-    event = pick(rng, LIFE_EVENTS);
+  const erng = makeRng(((w.seed >>> 0) ^ ((q + 1) * 2654435761)) >>> 0);
+  if (erng() < PARAMS.eventChance) {
+    event = pick(erng, LIFE_EVENTS);
+    w.lastEvent = event.id;
     if (event.incomeMult) income *= event.incomeMult;
     if (event.cash) w.savings += event.cash;
     if (event.rentRise) w.rentExtra += event.rentRise;
@@ -252,9 +261,19 @@ function makePopulation(rng, nBots) {
   for (let i = 0; i < nBots; i++) {
     const w = makeWorker(makeProfile(rng), strat());
     w.id = 'bot' + i;
+    w.seed = Math.floor(rng() * 1e9);
     pop.push(w);
   }
   return pop;
+}
+
+// deep clone a worker into its policy-free shadow twin (same profile, seed, choices)
+function twinOf(w) {
+  const t = makeWorker(JSON.parse(JSON.stringify(w.profile)), w.strategy);
+  t.id = w.id + '_twin';
+  t.seed = w.seed;
+  t.human = w.human;
+  return t;
 }
 
 // ---- run a whole game (bots only; policies = scenario object) ----
@@ -277,7 +296,7 @@ function runGame(seed, nBots, policies) {
 }
 
 const API = { makeRng, makeProfile, initSkills, capacity, requiredAt, fit, makeWorker,
-  chooseCourses, resolveQuarter, hire, makePopulation, runGame, STRAT, PARAMS, COURSES, SKILLS, FAMILY };
+  chooseCourses, resolveQuarter, hire, makePopulation, runGame, twinOf, effectiveFee, courseById, activeStudyHours, chrs, STRAT, PARAMS, COURSES, SKILLS, FAMILY, LIFE_EVENTS };
 if (typeof module !== 'undefined') module.exports = API;
 else root.Engine = API;
 })(typeof self !== 'undefined' ? self : this);
